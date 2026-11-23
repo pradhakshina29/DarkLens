@@ -1,6 +1,6 @@
 // Takes text like "Buy at ₹1,314" and returns the number 1314
 function parsePrice(text) {
-  const match = text.match(/₹\s*([\d,]+)/);
+  const match = text.match(/₹\s*([\d,]+(?:\.\d+)?)/);
 
   if (!match) {
     return null; // no number found (e.g. just "₹" on its own)
@@ -76,7 +76,7 @@ function findLabelOnSameLine(element) {
 // Words that usually mean "this is a fee or charge"
 const FEE_WORDS = ["fee", "charge", "delivery", "handling", "packaging", "platform", "convenience", "tax", "gst"];
 
-// NEW (Step 6): words that usually mean "this is the final amount you pay"
+// Words that usually mean "this is the final amount you pay"
 const TOTAL_WORDS = ["total amount", "to pay", "grand total", "amount payable", "order total", "you pay"];
 
 console.log("DarkLens is running on this page!");
@@ -84,7 +84,7 @@ console.log("DarkLens is running on this page!");
 setTimeout(() => {
   const allElements = document.querySelectorAll("*");
 
-  // NEW (Step 6): places to store what we find
+  // Places to store what we find
   const fees = [];    // list of fees we find, e.g. { label: "Platform Fee ₹10", price: 10 }
   let total = null;   // the final amount, once we find it
 
@@ -106,15 +106,21 @@ setTimeout(() => {
 
       // Only handle the smallest box
       if (!childHasPrice) {
-        const price = parsePrice(text);
-
         // Plan A: climb up to the row. Plan B: look left on the same line.
         let rowText = findRowText(element, text);
         if (!rowText) {
           rowText = findLabelOnSameLine(element) + " " + text.trim();
         }
 
-        // CHANGED (Step 6): is this row the total, a fee, or something else?
+        // NEW: if the row has no words (just "₹118"), look left for the label too
+        if (!/[a-zA-Z]/.test(rowText)) {
+          rowText = findLabelOnSameLine(element) + " " + rowText;
+        }
+
+        // NEW: some sites put "₹" and "118" in separate boxes, so try the row too
+        const price = parsePrice(text) ?? parsePrice(rowText);
+
+        // Is this row the total, a fee, or something else?
         const lowerRow = rowText.toLowerCase();
         const isTotal = TOTAL_WORDS.some(word => lowerRow.includes(word));
         const isFee = FEE_WORDS.some(word => lowerRow.includes(word));
@@ -132,7 +138,7 @@ setTimeout(() => {
     }
   }
 
-  // NEW (Step 6): add up the fees and print a summary
+  // Add up the fees and print a summary
   let totalFees = 0;
   for (const fee of fees) {
     totalFees = totalFees + fee.price;
