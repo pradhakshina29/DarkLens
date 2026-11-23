@@ -76,10 +76,17 @@ function findLabelOnSameLine(element) {
 // Words that usually mean "this is a fee or charge"
 const FEE_WORDS = ["fee", "charge", "delivery", "handling", "packaging", "platform", "convenience", "tax", "gst"];
 
+// NEW (Step 6): words that usually mean "this is the final amount you pay"
+const TOTAL_WORDS = ["total amount", "to pay", "grand total", "amount payable", "order total", "you pay"];
+
 console.log("DarkLens is running on this page!");
 
 setTimeout(() => {
   const allElements = document.querySelectorAll("*");
+
+  // NEW (Step 6): places to store what we find
+  const fees = [];    // list of fees we find, e.g. { label: "Platform Fee ₹10", price: 10 }
+  let total = null;   // the final amount, once we find it
 
   for (const element of allElements) {
     // Skip code blocks: <script> and <style> can contain ₹ inside the page's data
@@ -107,11 +114,16 @@ setTimeout(() => {
           rowText = findLabelOnSameLine(element) + " " + text.trim();
         }
 
-        // Is this row a fee? Check if it contains any fee word
+        // CHANGED (Step 6): is this row the total, a fee, or something else?
         const lowerRow = rowText.toLowerCase();
+        const isTotal = TOTAL_WORDS.some(word => lowerRow.includes(word));
         const isFee = FEE_WORDS.some(word => lowerRow.includes(word));
 
-        if (isFee) {
+        if (isTotal) {
+          total = price;
+          console.log("DarkLens TOTAL:", rowText, "→", price);
+        } else if (isFee) {
+          fees.push({ label: rowText, price: price });
           console.log("DarkLens FEE:", rowText, "→", price);
         } else {
           console.log("DarkLens found:", rowText, "→", price);
@@ -119,4 +131,18 @@ setTimeout(() => {
       }
     }
   }
+
+  // NEW (Step 6): add up the fees and print a summary
+  let totalFees = 0;
+  for (const fee of fees) {
+    totalFees = totalFees + fee.price;
+  }
+
+  console.log("===== DarkLens SUMMARY =====");
+  console.log("DarkLens fees found:", fees.length);
+  for (const fee of fees) {
+    console.log("DarkLens  •", fee.label.replace(/\s+/g, " "), "→ ₹" + fee.price);
+  }
+  console.log("DarkLens total fees: ₹" + totalFees);
+  console.log("DarkLens you pay: " + (total !== null ? "₹" + total : "not found on this page"));
 }, 3000);
