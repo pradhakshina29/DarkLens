@@ -81,7 +81,7 @@ const TOTAL_WORDS = ["total amount", "to pay", "grand total", "amount payable", 
 
 console.log("DarkLens is running on this page!");
 
-setTimeout(() => {
+function scanPage() {
   const allElements = document.querySelectorAll("*");
 
   // Places to store what we find
@@ -112,12 +112,12 @@ setTimeout(() => {
           rowText = findLabelOnSameLine(element) + " " + text.trim();
         }
 
-        // NEW: if the row has no words (just "₹118"), look left for the label too
+        // If the row has no words (just "₹118"), look left for the label too
         if (!/[a-zA-Z]/.test(rowText)) {
           rowText = findLabelOnSameLine(element) + " " + rowText;
         }
 
-        // NEW: some sites put "₹" and "118" in separate boxes, so try the row too
+        // Some sites put "₹" and "118" in separate boxes, so try the row too
         const price = parsePrice(text) ?? parsePrice(rowText);
 
         // Is this row the total, a fee, or something else?
@@ -151,4 +151,10 @@ setTimeout(() => {
   }
   console.log("DarkLens total fees: ₹" + totalFees);
   console.log("DarkLens you pay: " + (total !== null ? "₹" + total : "not found on this page"));
-}, 3000);
+}
+
+// Scan once when the page loads...
+setTimeout(scanPage, 3000);
+
+// ...and again 1 second after every click (opening a cart, expanding a section)
+document.addEventListener("click", () => setTimeout(scanPage, 1000));
