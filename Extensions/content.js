@@ -1,3 +1,18 @@
+// Takes text like "Buy at ₹1,314" and returns the number 1314
+function parsePrice(text) {
+  const match = text.match(/₹\s*([\d,]+)/);
+
+  if (!match) {
+    return null; // no number found (e.g. just "₹" on its own)
+  }
+
+  const numberText = match[1].replace(/,/g, ""); // "1,314" → "1314"
+  return parseFloat(numberText);                // "1314" → 1314
+}
+
+
+
+
 console.log("DarkLens is running on this page!");
 
 setTimeout(() => {
@@ -18,7 +33,8 @@ setTimeout(() => {
 
       // Only print if no child has the price, so this is the smallest box
       if (!childHasPrice) {
-        console.log("DarkLens found:", text);
+        const price = parsePrice(text);
+        console.log("DarkLens found:", text, "→", price);
       }
     }
   }
